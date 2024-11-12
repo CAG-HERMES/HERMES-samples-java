@@ -21,7 +21,7 @@ Before you begin, ensure you have met the following requirements:
 Start by cloning the repository to your local machine:
 
 ```bash
-git clone https://github.com/your-username/your-repository.git
+git clone https://github.com/CAG-HERMES/HERMES-samples-java.git
 cd your-repository
 ```
 
