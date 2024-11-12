@@ -22,7 +22,7 @@ Start by cloning the repository to your local machine:
 
 ```bash
 git clone https://github.com/CAG-HERMES/HERMES-samples-java.git
-cd your-repository
+cd HERMES-samples-java
 ```
 
 ### Building the Project
