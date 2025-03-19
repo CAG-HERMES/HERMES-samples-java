@@ -2,9 +2,11 @@ package com.sample.application;
 
 import com.solacesystems.jcsmp.*;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @Service
 public class SolaceSubscriberService {
@@ -30,6 +32,7 @@ public class SolaceSubscriberService {
     private JCSMPSession session;
     private XMLMessageConsumer consumer;
     private FlowReceiver QueueConsumer;
+    private AtomicBoolean schedulerActive = new AtomicBoolean(false);
 
     public void connect() {
         try {
@@ -39,6 +42,7 @@ public class SolaceSubscriberService {
             properties.setProperty(JCSMPProperties.USERNAME, username);
             properties.setProperty(JCSMPProperties.PASSWORD, password);
             properties.setProperty(JCSMPProperties.VPN_NAME, vpn);
+            properties.setBooleanProperty(JCSMPProperties.SSL_VALIDATE_CERTIFICATE, false);
 
             // Create a session
             session = JCSMPFactory.onlyInstance().createSession(properties);
@@ -48,6 +52,53 @@ public class SolaceSubscriberService {
             e.printStackTrace();
         }
     }
+
+    public void startScheduler() {
+        schedulerActive.set(true);
+    }
+
+    @Scheduled(fixedRate = 10000) // Run every 10 seconds
+    public void scheduledTask() {
+        System.out.println("scheduledTask");
+        if (schedulerActive.get()) {
+            startSendMessageToTopic(); // Trigger the message sending
+        }
+    }
+
+    public void startSendMessageToTopic() {
+        try {
+            sendMessage();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void sendMessage() {
+        try {
+            XMLMessageProducer producer = session.getMessageProducer(new JCSMPStreamingPublishEventHandler() {
+
+                @Override
+                public void responseReceived(String messageID) {
+                    System.out.println("Producer received response for msg: " + messageID);
+                }
+
+                @Override
+                public void handleError(String messageID, JCSMPException e, long timestamp) {
+                    System.out.printf("Producer received error for msg: %s@%s - %s%n",
+                            messageID,timestamp,e);
+                }
+            });
+
+
+            TextMessage message = JCSMPFactory.onlyInstance().createMessage(TextMessage.class);
+            message.setText("Hello, Solace! This is a triggered message.");
+            producer.send(message,JCSMPFactory.onlyInstance().createTopic(topic));
+            System.out.println("Message sent to topic");
+        } catch (JCSMPException e) {
+            e.printStackTrace();
+        }
+    }
+
 
     public void startSubcribeTopic() {
         try {

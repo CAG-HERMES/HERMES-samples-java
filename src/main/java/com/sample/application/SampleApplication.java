@@ -6,8 +6,10 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SpringBootApplication
+@EnableScheduling  // Enable scheduling in Spring Boot
 public class SampleApplication {
 	@Autowired
 	private SolaceSubscriberService solaceSubscriberService;
@@ -26,6 +28,7 @@ public class SampleApplication {
 	public CommandLineRunner run() {
 		return args -> {
 			solaceSubscriberService.connect();
+			solaceSubscriberService.startScheduler();
 			solaceSubscriberService.startSubcribeTopic();
 			solaceSubscriberService.startReceivingFromQueue();
 
