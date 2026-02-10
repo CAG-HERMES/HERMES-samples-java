@@ -9,11 +9,10 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SpringBootApplication
-@EnableScheduling  // Enable scheduling in Spring Boot
+@EnableScheduling // Enable scheduling in Spring Boot
 public class SampleApplication {
 	@Autowired
 	private SolaceSubscriberService solaceSubscriberService;
-
 
 	public static void main(String[] args) {
 		try {

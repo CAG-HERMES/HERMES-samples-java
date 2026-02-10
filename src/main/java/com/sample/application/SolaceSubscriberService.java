@@ -1,12 +1,26 @@
 package com.sample.application;
 
-import com.solacesystems.jcsmp.*;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicBoolean;
+import com.solacesystems.jcsmp.BytesXMLMessage;
+import com.solacesystems.jcsmp.ConsumerFlowProperties;
+import com.solacesystems.jcsmp.EndpointProperties;
+import com.solacesystems.jcsmp.FlowReceiver;
+import com.solacesystems.jcsmp.JCSMPException;
+import com.solacesystems.jcsmp.JCSMPFactory;
+import com.solacesystems.jcsmp.JCSMPProperties;
+import com.solacesystems.jcsmp.JCSMPSession;
+import com.solacesystems.jcsmp.JCSMPStreamingPublishEventHandler;
+import com.solacesystems.jcsmp.Queue;
+import com.solacesystems.jcsmp.TextMessage;
+import com.solacesystems.jcsmp.XMLMessageConsumer;
+import com.solacesystems.jcsmp.XMLMessageListener;
+import com.solacesystems.jcsmp.XMLMessageProducer;
 
 @Service
 public class SolaceSubscriberService {
@@ -29,6 +43,15 @@ public class SolaceSubscriberService {
     @Value("${solace.queue}")
     private String queue;
 
+    @Value("${solace.ssl.trust-store-path}")
+    private String trustStorePath;
+
+    @Value("${solace.ssl.trust-store-password}")
+    private String trustStorePassword;
+
+    @Value("${solace.ssl.ssl-validate:true}")
+    private boolean sslValidate;
+
     private JCSMPSession session;
     private XMLMessageConsumer consumer;
     private FlowReceiver QueueConsumer;
@@ -42,7 +65,9 @@ public class SolaceSubscriberService {
             properties.setProperty(JCSMPProperties.USERNAME, username);
             properties.setProperty(JCSMPProperties.PASSWORD, password);
             properties.setProperty(JCSMPProperties.VPN_NAME, vpn);
-            properties.setBooleanProperty(JCSMPProperties.SSL_VALIDATE_CERTIFICATE, false);
+            properties.setProperty(JCSMPProperties.SSL_TRUST_STORE, trustStorePath);
+            properties.setProperty(JCSMPProperties.SSL_TRUST_STORE_PASSWORD, trustStorePassword);
+            properties.setBooleanProperty(JCSMPProperties.SSL_VALIDATE_CERTIFICATE, sslValidate);
 
             // Create a session
             session = JCSMPFactory.onlyInstance().createSession(properties);
@@ -85,20 +110,18 @@ public class SolaceSubscriberService {
                 @Override
                 public void handleError(String messageID, JCSMPException e, long timestamp) {
                     System.out.printf("Producer received error for msg: %s@%s - %s%n",
-                            messageID,timestamp,e);
+                            messageID, timestamp, e);
                 }
             });
 
-
             TextMessage message = JCSMPFactory.onlyInstance().createMessage(TextMessage.class);
             message.setText("Hello, Solace! This is a triggered message.");
-            producer.send(message,JCSMPFactory.onlyInstance().createTopic(topic));
+            producer.send(message, JCSMPFactory.onlyInstance().createTopic(topic));
             System.out.println("Message sent to topic");
         } catch (JCSMPException e) {
             e.printStackTrace();
         }
     }
-
 
     public void startSubcribeTopic() {
         try {
@@ -111,18 +134,18 @@ public class SolaceSubscriberService {
                     // your implementation here....
                     if (msg instanceof TextMessage) {
                         System.out.printf("TextMessage received: '%s'%n",
-                                ((TextMessage)msg).getText());
+                                ((TextMessage) msg).getText());
                     } else {
                         System.out.println("Message received.");
                     }
-                    System.out.printf("Message Dump:%n%s%n",msg.dump());
-                    latch.countDown();  // unblock main thread
+                    System.out.printf("Message Dump:%n%s%n", msg.dump());
+                    latch.countDown(); // unblock main thread
                 }
 
                 @Override
                 public void onException(JCSMPException e) {
-                    System.out.printf("Consumer received exception: %s%n",e);
-                    latch.countDown();  // unblock main thread
+                    System.out.printf("Consumer received exception: %s%n", e);
+                    latch.countDown(); // unblock main thread
                 }
             });
 
@@ -141,8 +164,6 @@ public class SolaceSubscriberService {
         }
         if (session != null) {
             session.closeSession();
-
-            // session.removeSubscription(JCSMPFactory.onlyInstance().createTopic(topic), true)
 
         }
     }

@@ -87,5 +87,11 @@ docker run -e "solace.topic=test" -e "solace.host=ws://host.docker.internal:8008
 
 **solace.msgVpn** = the message vpn
 
+**solace.ssl.trust-store-path** = the path to the SSL truststore file
+
+**solace.ssl.trust-store-password** = the password for the SSL truststore
+
+**solace.ssl.ssl-validate** = whether to validate SSL certificates (default: true)
+
 
 You can replace these with the environment variables required by your application.
